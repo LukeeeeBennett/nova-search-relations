@@ -68,9 +68,17 @@ trait SearchesRelations
     protected static function applyRelationSearch(Builder $query, string $search): Builder
     {
         foreach (static::searchableRelations() as $relation => $columns) {
-            $query->orWhereHas($relation, function ($query) use ($columns, $search) {
-                $query->where(static::searchQueryApplier($columns, $search));
-            });
+            if (is_array($columns) && is_array($columns[0])) {
+                foreach ($columns as $column) {
+                    $query->orWhereHasMorph($relation, $column['types'], function ($query) use ($column, $search) {
+                        $query->where(static::searchQueryApplier($column['fields'], $search));
+                    });
+                }
+            } else {
+                $query->orWhereHas($relation, function ($query) use ($columns, $search) {
+                    $query->where(static::searchQueryApplier($columns, $search));
+                });
+            }
         }
 
         return $query;
